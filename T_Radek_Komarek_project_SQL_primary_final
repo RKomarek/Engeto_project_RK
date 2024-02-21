@@ -1,0 +1,23 @@
+CREATE TABLE t_Radek_Komarek_project_SQL_primary_final
+(
+SELECT 
+	cpc.name AS food_category,
+	cpc.price_value AS food_cat_value,
+	cpc.price_unit AS food_cat_unit,
+	round(avg(cp.value), 2) AS price,
+	cpib.name AS industry,
+	round(avg(cp2.value), 2) AS average_wages,
+	cp2.payroll_year
+FROM czechia_price cp 
+JOIN czechia_payroll cp2 
+	ON YEAR (cp.date_from) = cp2.payroll_year
+	AND cp2.payroll_year BETWEEN '2006' AND '2018'
+	AND cp.region_code IS NULL
+JOIN czechia_price_category cpc 
+	ON cpc.code = cp.category_code 
+JOIN czechia_payroll_industry_branch cpib 
+	ON cpib.code = cp2.industry_branch_code
+GROUP BY cpc.name, cpc.price_value, cpc.price_unit, cpib.name, cp2.payroll_year 
+ORDER BY cp2.payroll_year
+)
+;
