@@ -1,0 +1,36 @@
+-- 1. Rostou v průběhu let mzdy ve všech odvětvích, nebo v některých klesají? 
+-- a. možnost pomocí syntaxe LAG, OVER a PARTITION BY
+
+SELECT
+    payroll_year,
+    industry,
+    AVG(average_wages) AS average_wages,
+    CASE 
+        WHEN AVG(average_wages) > LAG(AVG(average_wages)) OVER (PARTITION BY industry ORDER BY payroll_year) THEN 'Rostoucí'
+        WHEN AVG(average_wages) < LAG(AVG(average_wages)) OVER (PARTITION BY industry ORDER BY payroll_year) THEN 'Klesající'
+        ELSE 'Stabilní'
+    END AS Diff
+FROM t_Radek_Komarek_project_SQL_primary_final
+GROUP BY 
+    payroll_year, industry
+ORDER BY 
+    industry, payroll_year;
+   
+-- b. možnost pomocí syntaxe "SELF-JOIN" spojení jedné tabulky
+   SELECT
+    t1.payroll_year,
+    t1.industry,
+    AVG(t1.average_wages) AS average_wages,
+    CASE 
+        WHEN AVG(t1.average_wages) > AVG(t2.average_wages) THEN 'Rostoucí'
+        WHEN AVG(t1.average_wages) < AVG(t2.average_wages) THEN 'Klesající'
+        ELSE 'Stabilní'
+    END AS Diff
+FROM 
+    t_Radek_Komarek_project_SQL_primary_final t1
+LEFT JOIN 
+    t_Radek_Komarek_project_SQL_primary_final t2 ON t1.industry = t2.industry AND t1.payroll_year = t2.payroll_year - 1
+GROUP BY 
+    t1.payroll_year, t1.industry
+ORDER BY 
+    t1.industry, t1.payroll_year;
