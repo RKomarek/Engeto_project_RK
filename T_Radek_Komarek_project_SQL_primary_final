@@ -1,23 +1,44 @@
-CREATE TABLE t_Radek_Komarek_project_SQL_primary_final
-(
+-- czechia_payroll_view
+
+CREATE OR REPLACE VIEW v_czechia_payroll AS
+SELECT
+	cp.value,
+	cpvt.code AS value_code,
+	cpvt.name AS value_name,
+	cpu.name AS unit_name,
+	cpc.name AS emp_calculation,
+	cpib.name AS industry_name,
+	cp.payroll_year
+FROM
+	czechia_payroll AS cp
+LEFT JOIN czechia_payroll_calculation AS cpc 
+	ON cp.calculation_code = cpc.code
+LEFT JOIN czechia_payroll_unit AS cpu 
+	ON cp.unit_code = cpu.code
+LEFT JOIN czechia_payroll_industry_branch AS cpib 
+	ON cp.industry_branch_code = cpib.code
+LEFT JOIN czechia_payroll_value_type AS cpvt 
+	ON cp.value_type_code = cpvt.code;
+	
+-- czechia_price view
+CREATE OR REPLACE VIEW v_czechia_price AS
 SELECT 
-	cpc.name AS food_category,
-	cpc.price_value AS food_cat_value,
-	cpc.price_unit AS food_cat_unit,
-	round(avg(cp.value), 2) AS price,
-	cpib.name AS industry,
-	round(avg(cp2.value), 2) AS average_wages,
-	cp2.payroll_year
-FROM czechia_price cp 
-JOIN czechia_payroll cp2 
-	ON YEAR (cp.date_from) = cp2.payroll_year
-	AND cp2.payroll_year BETWEEN '2006' AND '2018'
-	AND cp.region_code IS NULL
-JOIN czechia_price_category cpc 
-	ON cpc.code = cp.category_code 
-JOIN czechia_payroll_industry_branch cpib 
-	ON cpib.code = cp2.industry_branch_code
-GROUP BY cpc.name, cpc.price_value, cpc.price_unit, cpib.name, cp2.payroll_year 
-ORDER BY cp2.payroll_year
-)
-;
+	ROUND(AVG(cp.value), 2) AS goods_value,
+	cp.category_code AS goods_code,
+	cpc.name AS goods_name,
+	cpc.price_value AS goods_price_value,
+	cpc.price_unit AS goods_price_unit,
+	YEAR(cp.date_from) AS price_year
+FROM czechia_price AS cp
+LEFT JOIN czechia_price_category AS cpc 	
+	ON cp.category_code = cpc.code
+GROUP BY goods_code, YEAR(cp.date_from);
+
+
+-- primary table
+
+CREATE OR REPLACE TABLE t_radek_komarek_project_SQL_primary_final AS 
+SELECT cp.*, cp2.* 
+FROM v_czechia_payroll AS cp
+LEFT JOIN v_czechia_price AS cp2
+ON cp.payroll_year = cp2.price_year;
