@@ -1,18 +1,51 @@
 -- 2. Kolik je možné si koupit litrů mléka a kilogramů chleba za první a poslední srovnatelné období v dostupných datech cen a mezd?
 
--- Tento dotaz vypočítal průměrný počet koupených kusů mléka a chleba za první a poslední srovnatelné roky v dostupných datech cen a mezd.
+-- dotaz k nalezení kódu pro chléb a mléko
 
-SELECT
-	payroll_year,
-	food_category,
-	food_cat_value,
-	food_cat_unit,
-	round(sum(average_wages) / avg(price), 2) AS 'počet_koupených_kusů'
-FROM t_Radek_Komarek_project_SQL_primary_final trkpspf 
-WHERE payroll_year IN (2006, 2018)
-	AND average_wages IS NOT NULL
-	AND food_category IN ('Mléko polotučné pasterované', 'Chléb konzumní kmínový')
-GROUP BY
-    payroll_year, food_category, food_cat_value, food_cat_unit
-ORDER BY
-    payroll_year, food_category;
+SELECT *
+FROM t_radek_komarek_project_sql_primary_final
+WHERE value_name LIKE '%chléb%';
+
+SELECT *
+FROM t_radek_komarek_project_sql_primary_final
+WHERE value_name LIKE '%mléko%';
+
+
+
+SELECT 
+	ROUND(value / (
+		SELECT value FROM t_radek_komarek_project_sql_primary_final
+		WHERE value_code = 111301 
+		AND year = 2006
+		AND quarter = 1)) AS bread_for_wage,
+	ROUND(value / (
+		SELECT value FROM t_radek_komarek_project_sql_primary_final
+		WHERE value_code = 114201 
+		AND year = 2006
+	 	AND quarter = 1)) AS milk_for_wage,
+	data_table.*
+FROM
+	t_radek_komarek_project_sql_primary_final AS data_table
+WHERE 
+	year = 2006
+	AND quarter = 1
+	AND value_code = 5958
+UNION
+SELECT 
+	ROUND(value / (
+		SELECT value FROM t_radek_komarek_project_sql_primary_final
+		WHERE value_code = 111301 
+		AND year = 2018
+		AND quarter = 2)) AS bread_for_wage,
+	ROUND(value / (
+		SELECT value FROM t_radek_komarek_project_sql_primary_final
+		WHERE value_code = 114201 
+		AND year = 2018
+		AND quarter = 2)) AS milk_for_wage,
+	data_table.*
+FROM
+	t_radek_komarek_project_sql_primary_final AS data_table
+WHERE 
+	year = 2018
+	AND quarter = 2
+	AND value_code = 5958;
