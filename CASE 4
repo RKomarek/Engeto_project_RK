@@ -1,23 +1,38 @@
 -- 4. Existuje rok, ve kterém byl meziroční nárůst cen potravin výrazně vyšší než růst mezd (větší než 10 %)?
--- existuje 30 položek, kde byl rozdíl vyšší než 10 % mezi nárůstem cen potravin a reálných mezd
 
-WITH price_and_wages_growth AS (
-  SELECT 
-    t1.payroll_year,
-    t1.food_category,
-    t1.price,
-    t1.average_wages,
-    LAG(t1.price) OVER (PARTITION BY t1.food_category ORDER BY t1.payroll_year) AS prev_price,
-    LAG(t1.average_wages) OVER (PARTITION BY t1.food_category ORDER BY t1.payroll_year) AS prev_wages
-  FROM t_Radek_Komarek_project_SQL_primary_final t1
-  WHERE t1.payroll_year BETWEEN 2006 AND 2018
-    AND t1.average_wages IS NOT NULL
-)
 SELECT 
-  *,
-  round((price - prev_price) / prev_price * 100, 2) AS price_growth,
-  round((average_wages - prev_wages) / prev_wages * 100, 2) AS wages_growth
-FROM price_and_wages_growth
-WHERE round((price - prev_price) / prev_price * 100, 2) > 10
-	AND round((average_wages - prev_wages) / prev_wages * 100, 2) < 10
-ORDER BY payroll_year, food_category;
+	AVG(growth_percent) AS price_or_wages_growth_perc, 
+	year
+FROM (
+	SELECT
+		ROUND(AVG(t.value),2) AS avg_value,
+		t2.year_value,
+		ROUND( ( ROUND(AVG(t.value),2) - t2.year_value ) / t2.year_value * 100, 2 ) as growth_percent,
+		t.value_name,
+		t.unit,
+		t.industry,
+		t.YEAR,
+		t2.YEAR AS prev_year
+	FROM
+		t_radek_komarek_project_sql_primary_final AS t
+	LEFT JOIN (
+		SELECT
+			round(avg(value),2) AS year_value,
+			value_name,
+			unit,
+			industry,
+			year
+		FROM
+			t_radek_komarek_project_sql_primary_final
+		WHERE
+			value_code NOT IN (316, 5958)
+			AND industry IS NOT NULL
+			GROUP BY YEAR, value_name) AS t2
+		ON t.value_name = t2.value_name
+		AND t.year = t2.year + 1
+	WHERE
+		t.value_code NOT IN (316, 5958)
+		AND t.year >= 2007
+	GROUP BY t.`year`, t.value_name) AS food_prices
+GROUP BY YEAR
+ORDER BY price_or_wages_growth_perc DESC;
