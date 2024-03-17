@@ -1,30 +1,35 @@
 -- 5. Má výška HDP vliv na změny ve mzdách a cenách potravin?
 -- Neboli, pokud HDP vzroste výrazněji v jednom roce, projeví se to na cenách potravin či mzdách ve stejném nebo následujícím roce výraznějším růstem?
 
-WITH base AS (
-  SELECT
-  	t1.food_category,
-  	avg(t1.price) AS avg_price,
-  	LAG(avg(t1.price)) OVER (PARTITION BY t1.food_category ORDER BY t1.payroll_year) AS prev_price,
-    round(avg(t1.average_wages), 2) AS avg_avg_wages,
-  	LAG(round(avg(t1.average_wages), 2)) OVER (PARTITION BY t1.food_category ORDER BY t1.payroll_year) AS prev_avg_wages,
-    t2.HDP,
-    LAG(t2.HDP) OVER (PARTITION BY t1.food_category ORDER BY t1.payroll_year) AS prev_HDP,
-    t1.payroll_year
-  FROM t_radek_komarek_project_sql_primary_final t1
-  LEFT JOIN t_radek_komarek_project_sql_secondary_final t2
-    ON t1.payroll_year = t2.`year`
-    AND t2.country = 'Czech Republic'
-  GROUP BY t1.food_category, t2.HDP, t1.payroll_year
-  ORDER BY t1.food_category, t1.payroll_year
-)
-SELECT
-	food_category,
-	avg_price,
-	avg_price - prev_price AS diff_price,
-	avg_avg_wages,
-	avg_avg_wages - prev_avg_wages AS diff_avg_wages,
-	HDP,
-	HDP - prev_HDP AS diff_HDP,
-	payroll_year
-FROM base;
+SELECT 
+	ROUND(AVG(t.value),2) AS avg_value,
+	t2.year_value,
+	ROUND( ( ROUND(AVG(t.value),2) - t2.year_value ) / t2.year_value * 100, 2 ) as growth_percent,
+	t.GDP,
+	ROUND( ( ROUND(AVG(t.GDP),2) - t2.GDP ) / t2.GDP * 100, 2 ) as gdp_growth,
+	t.value_name,
+	t.unit,
+	t.industry AS industry_or_measurement,
+	t.YEAR,
+	t2.YEAR AS prev_year,
+	t.food_or_wage,
+	t.country
+FROM t_radek_komarek_project_sql_secondary_final AS t
+LEFT JOIN (
+		SELECT
+			ROUND(AVG(value),2) AS year_value,
+			value_name,
+			unit,
+			industry,
+			YEAR,
+			country,
+			GDP
+		FROM
+			t_radek_komarek_project_sql_secondary_final 
+			GROUP BY year,value_name
+			) AS t2
+	ON t.value_name = t2.value_name
+	AND t.year = t2.year + 1
+WHERE
+	t.year >= 2007
+GROUP BY t.`year`, t.value_name;
