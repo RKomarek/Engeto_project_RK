@@ -1,14 +1,22 @@
-CREATE TABLE t_Radek_Komarek_project_SQL_secondary_final
-(
-SELECT
-	c.country,
-	c.capital_city,
-	e.population,
-	e.`year`,
-	round(e.GDP, 2) AS HDP ,
-	e.gini,
-	e.taxes
-FROM countries c
-JOIN economies e 
-	ON c.country = e.country
-);
+-- Secondary_table
+
+CREATE OR REPLACE TABLE t_radek_komarek_project_sql_secondary_final AS
+SELECT 
+	t1.*,
+	e.country,
+	e.GDP,
+	CASE 
+		WHEN value_code = 5958 THEN 'wages'
+		ELSE 'food' 
+	    END AS food_or_wage
+FROM t_radek_komarek_project_sql_primary_final AS t1
+LEFT JOIN (
+		SELECT country, 
+		GDP, 
+		year
+		FROM economies
+		WHERE country LIKE '%czech%'
+		) AS e
+	ON t1.year = e.YEAR
+WHERE value_code != 316
+	AND industry IS NOT NULL;
