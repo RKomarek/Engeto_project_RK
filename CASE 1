@@ -5,7 +5,7 @@ FROM (
 	SELECT
 		value,
 		LAG(value) OVER (PARTITION BY industry_name ORDER BY price_year) AS prev_year_value,
-	    value - LAG(value) OVER (PARTITION BY industry_name ORDER BY price_year) AS yearly_diff,
+	   	value - LAG(value) OVER (PARTITION BY industry_name ORDER BY price_year) AS yearly_diff,
 		value_name,
 		unit_name,
 		industry_name,
